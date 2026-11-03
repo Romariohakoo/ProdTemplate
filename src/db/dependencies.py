@@ -1,4 +1,3 @@
-from collections.abc import AsyncIterator
 from typing import Annotated
 
 from fastapi import Depends
@@ -7,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.database import SessionLocal
 
 
-async def get_session() -> AsyncIterator[AsyncSession]:
+async def get_session():
     async with SessionLocal() as session:
         yield session
 

@@ -5,5 +5,5 @@ router = APIRouter(tags=["ping"])
 
 
 @router.get("/ping", response_class=PlainTextResponse)
-async def ping() -> str:
+async def ping():
     return "ok"
