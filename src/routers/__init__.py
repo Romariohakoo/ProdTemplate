@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
-from src.routers import ping
+from src.routers import auth, ping
 
 api_router = APIRouter(prefix="/api")
 api_router.include_router(ping.router)
-# Новые роутеры подключать здесь
+api_router.include_router(auth.router)
