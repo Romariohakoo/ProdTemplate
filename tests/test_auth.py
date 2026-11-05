@@ -1,6 +1,8 @@
 REGISTER_URL = "/api/auth/register"
 LOGIN_URL = "/api/auth/login"
 ME_URL = "/api/auth/me"
+REFRESH_URL = "/api/auth/refresh"
+LOGOUT_URL = "/api/auth/logout"
 
 USER = {
     "username": "alice",
@@ -16,6 +18,10 @@ def _register(client, **overrides):
 
 def _login(client, email=USER["email"], password=USER["password"]):
     return client.post(LOGIN_URL, json={"email": email, "password": password})
+
+
+def _refresh(client, refresh_token):
+    return client.post(REFRESH_URL, json={"refresh_token": refresh_token})
 
 
 # ─────────────────────────── регистрация: happy path ───────────────────────────
@@ -57,6 +63,28 @@ def test_login_success(client):
     assert body["token_type"] == "bearer"
     assert isinstance(body["access_token"], str)
     assert body["access_token"]
+    assert isinstance(body["refresh_token"], str)
+    assert body["refresh_token"]
+
+
+def test_refresh_rotates_refresh_token(client):
+    assert _register(client).status_code == 201
+    tokens = _login(client).json()
+
+    response = _refresh(client, tokens["refresh_token"])
+
+    assert response.status_code == 200
+    refreshed = response.json()
+    assert refreshed["access_token"] != tokens["access_token"]
+    assert refreshed["refresh_token"] != tokens["refresh_token"]
+    assert _refresh(client, tokens["refresh_token"]).status_code == 401
+
+
+def test_refresh_rejects_access_token(client):
+    assert _register(client).status_code == 201
+    tokens = _login(client).json()
+
+    assert _refresh(client, tokens["access_token"]).status_code == 401
 
 
 def test_login_wrong_password(client):
@@ -93,6 +121,40 @@ def test_me_with_invalid_token(client):
     response = client.get(ME_URL, headers={"Authorization": "Bearer not-a-jwt"})
     assert response.status_code == 401
     assert response.json()["reason"] == "Could not validate credentials"
+
+
+def test_logout_revokes_access_and_refresh_tokens(client):
+    assert _register(client).status_code == 201
+    tokens = _login(client).json()
+
+    response = client.post(
+        LOGOUT_URL, headers={"Authorization": f"Bearer {tokens['access_token']}"}
+    )
+
+    assert response.status_code == 204
+    assert (
+        client.get(ME_URL, headers={"Authorization": f"Bearer {tokens['access_token']}"}).status_code
+        == 401
+    )
+    assert _refresh(client, tokens["refresh_token"]).status_code == 401
+
+
+def test_logout_does_not_revoke_another_login_session(client):
+    assert _register(client).status_code == 201
+    first_tokens = _login(client).json()
+    second_tokens = _login(client).json()
+
+    response = client.post(
+        LOGOUT_URL, headers={"Authorization": f"Bearer {first_tokens['access_token']}"}
+    )
+
+    assert response.status_code == 204
+    assert (
+        client.get(
+            ME_URL, headers={"Authorization": f"Bearer {second_tokens['access_token']}"}
+        ).status_code
+        == 200
+    )
 
 
 # ─────────────────────────── валидация пароля (422) ────────────────────────────

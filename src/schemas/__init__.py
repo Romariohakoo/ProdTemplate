@@ -1,1 +1,7 @@
-from src.schemas.auth import UserRegister, UserLogin, TokenResponse, UserResponse
+from src.schemas.auth import (
+    RefreshTokenRequest,
+    TokenResponse,
+    UserLogin,
+    UserRegister,
+    UserResponse,
+)
