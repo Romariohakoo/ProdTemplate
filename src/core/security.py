@@ -9,6 +9,8 @@ password_hash = PasswordHash.recommended()
 
 
 def hash_password(password: str) -> str:
+    assert len(password) >= 8, "password too short"
+    assert len(password.encode("utf-8")) <= 72, "password too long (bytes)"
     return password_hash.hash(password)
 
 
