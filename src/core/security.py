@@ -14,7 +14,7 @@ def hash_password(password: str) -> str:
     if len(password) < 8 or len(password.encode("utf-8")) > 72:
         raise HTTPException(
             status_code=401,
-            detail="Invalid email or password"
+            detail="Password incorrect"
         )
     return password_hash.hash(password)
 
