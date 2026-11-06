@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 import jwt
+from fastapi import HTTPException
 from pwdlib import PasswordHash
 
 from src.core.config import settings
@@ -10,8 +11,11 @@ password_hash = PasswordHash.recommended()
 
 
 def hash_password(password: str) -> str:
-    assert len(password) >= 8, "password too short"
-    assert len(password.encode("utf-8")) <= 72, "password too long (bytes)"
+    if len(password) < 8 or len(password.encode("utf-8")) > 72:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password"
+        )
     return password_hash.hash(password)
 
 
